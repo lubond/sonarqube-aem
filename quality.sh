@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # add curl dependency
-apk add --no-cache --virtual quality-dependencies curl;
+apt-get update && apt-get install -y curl;
 
 #########
 # Creates Sonar Qube Custom Quality Gate.
@@ -166,6 +166,6 @@ activate_rules \
   -d targetKey=$PROFILE_KEY
 
 # clean up curl dependency
-apk del --purge quality-dependencies;
+apt-get remove --purge -y curl;
 
 info "Quality Profile Creation done!"

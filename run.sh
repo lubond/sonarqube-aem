@@ -9,9 +9,18 @@ set_prop_from_deprecated_env_var() {
   fi
 }
 
+DEFAULT_CMD=('/opt/java/openjdk/bin/java' '-jar' 'lib/sonarqube.jar' '-Dsonar.log.console=true')
+
 # if nothing is passed, assume we want to run sonarqube server
 if [ "$#" == 0 ]; then
   set -- bin/sonar.sh
+fi
+
+# this if will check if the first argument is a flag
+# but only works if all arguments require a hyphenated flag
+# -v; -SL; -f arg; etc will work, but not arg1 arg2
+if [ "$#" -eq 0 ] || [ "${1#-}" != "$1" ]; then
+    set -- "${DEFAULT_CMD[@]}" "$@"
 fi
 
 # if first arg looks like a flag, assume we want to run sonarqube server with flags
@@ -26,7 +35,7 @@ if [[ "$1" = 'bin/sonar.sh' ]]; then
     # Allow the container to be started with `--user`
     if [[ "$(id -u)" = '0' ]]; then
         chown -R sonarqube:sonarqube "${SQ_DATA_DIR}" "${SQ_EXTENSIONS_DIR}" "${SQ_LOGS_DIR}" "${SQ_TEMP_DIR}"
-        exec su-exec sonarqube "$0" "$@"
+        exec gosu sonarqube "$0" "$@"
     fi
 
     #
