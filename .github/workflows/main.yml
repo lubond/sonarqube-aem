@@ -19,7 +19,7 @@ jobs:
       run: |
         docker login -u $DOCKER_USER -p $DOCKER_PASSWORD 
     - name: Build the Docker image
-      run: docker build . --file Dockerfile --tag ahmedmusallam/sonarqube-aem:latest
+      run: docker build . --file Dockerfile --tag lubond/sonarqube-aem:latest
       
     - name: Docker Push
-      run: docker push ahmedmusallam/sonarqube-aem
+      run: docker push lubond/sonarqube-aem

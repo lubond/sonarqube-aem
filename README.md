@@ -7,7 +7,7 @@ This is a docker image that is identical to the official [sonarqube docker image
 Latest from Docker Hub:
 
 ```sh
-docker run --rm -p 9000:9000 ahmedmusallam/sonarqube-aem:latest
+docker run --rm -p 9000:9000 lubond/sonarqube-aem:latest
 ```
 
 From Source:
