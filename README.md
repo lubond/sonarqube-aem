@@ -1,6 +1,6 @@
 # sonarqube-aem
 
-This is a docker image that is identical to the official [sonarqube docker image](https://github.com/SonarSource/docker-sonarqube/blob/master/8/community/Dockerfile) with an added script to install [AEM-Rules-for-SonarQube](https://github.com/Cognifide/AEM-Rules-for-SonarQube) extension.
+This is a docker image that is identical to the official [SonarQube 9 Community Docker image](https://github.com/SonarSource/docker-sonarqube/blob/master/9/community/Dockerfile) with added scripts to install the [AEM-Rules for SonarQube](https://github.com/Cognifide/AEM-Rules-for-SonarQube) extension.
 
 ## Running
 
@@ -20,9 +20,10 @@ Take a look at `quality.sh` in source code and adjust it to your needs.
 
 By default, that script will create a new `aem-gate` Gate and set the following Conditions:
 
-- Code Coverage - 75% required
-- Code Smells - A require
-- Maintainability Rating - A required
-- Reliability Rating - A required
-- Security Rating - A required
-
+| Quality Requirement | Threshold |
+|--|:--:|
+| Code Coverage | 80% |
+| Code Smells | A |
+| Maintainability Rating | A |
+| Reliability Rating | A |
+| Security Rating | A |

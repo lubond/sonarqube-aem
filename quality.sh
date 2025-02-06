@@ -75,11 +75,11 @@ create_gate -d name=$gate_name
 info "Setting aem-gate as the default Quality Gate."
 set_as_default_gate -d name=$gate_name
 
-info "Creating Condition: Code Coverage - 75% required"
+info "Creating Condition: Code Coverage - 80% required"
 create_condition \
   -d metric=coverage \
   -d gateName=$gate_name \
-  -d error=75 \
+  -d error=80 \
   -d op=LT
 
 info "Creating Condition: Code Smells - A required"
@@ -141,12 +141,10 @@ get_aem_profile_id () {
 }
 
 
-
 #info "Create AEM Profile - Java"
 create_profile \
   -d language=java \
   -d name=aem-way-java
-
 
 info "Make AEM profile Inherit Sonar way"
 change_profile_parent \
