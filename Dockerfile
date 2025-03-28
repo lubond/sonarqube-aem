@@ -1,23 +1,23 @@
-FROM eclipse-temurin:17-jre-jammy
+FROM eclipse-temurin:21-jre-noble
 
-LABEL org.opencontainers.image.url=https://github.com/SonarSource/docker-sonarqube
+LABEL io.k8s.description="AEM SonarQube Community Build, preconfigured code review tool that systematically helps you deliver Clean Code."
+LABEL io.openshift.min-cpu=400m
+LABEL io.openshift.min-memory=2048M
+LABEL io.openshift.non-scalable=true
+LABEL io.openshift.tags=sonarqube,static-code-analysis,code-quality,clean-code,adobe,aem
+LABEL org.opencontainers.image.url=https://github.com/lubond/sonarqube-aem
 
 ENV LANG='en_US.UTF-8' \
     LANGUAGE='en_US:en' \
     LC_ALL='en_US.UTF-8'
 
-#
-# SonarQube community setup
-#
-#
-# SonarQube setup with AEM Rules v1.6 jar
-#
+# SonarQube setup with AEM Rules jar
 ARG AEM_RULE_JAR_VERSION=1.7
-ARG SONARQUBE_VERSION=9.9.8.100196
+ARG SONARQUBE_VERSION=25.3.0.104237
 ARG SONARQUBE_ZIP_URL=https://binaries.sonarsource.com/Distribution/sonarqube/sonarqube-${SONARQUBE_VERSION}.zip
-ENV JAVA_HOME='/opt/java/openjdk' \
+ENV DOCKER_RUNNING="true" \
+    JAVA_HOME='/opt/java/openjdk' \
     SONARQUBE_HOME=/opt/sonarqube \
-    PATH="/opt/java/openjdk/bin:$PATH" \
     SONAR_VERSION="${SONARQUBE_VERSION}" \
     SQ_DATA_DIR="/opt/sonarqube/data" \
     SQ_EXTENSIONS_DIR="/opt/sonarqube/extensions" \
@@ -25,17 +25,19 @@ ENV JAVA_HOME='/opt/java/openjdk' \
     SQ_TEMP_DIR="/opt/sonarqube/temp" \
     AEM_RULES_JAR_URL=https://github.com/wttech/AEM-Rules-for-SonarQube/releases/download/v${AEM_RULE_JAR_VERSION}/sonar-aemrules-plugin-${AEM_RULE_JAR_VERSION}.jar
 
+# Separate stage to use variable expansion
+ENV ES_TMPDIR="${SQ_TEMP_DIR}"
+
 RUN set -eux; \
-    groupadd --system --gid 1000 sonarqube; \
-    useradd --system --uid 1000 --gid sonarqube sonarqube; \
+    deluser ubuntu; \
+    useradd --system --uid 1000 --gid 0 sonarqube; \
     apt-get update; \
     apt-get --no-install-recommends -y install \
-    bash \
-    curl \
-    fonts-dejavu \
-    gnupg \
-    unzip \
-    gosu; \
+        bash \
+        curl \
+        fonts-dejavu \
+        gnupg \
+        unzip; \
     echo "networkaddress.cache.ttl=5" >> "${JAVA_HOME}/conf/security/java.security"; \
     sed --in-place --expression="s?securerandom.source=file:/dev/random?securerandom.source=file:/dev/urandom?g" "${JAVA_HOME}/conf/security/java.security"; \
     # pub   2048R/D26468DE 2015-05-25
@@ -58,15 +60,20 @@ RUN set -eux; \
     rm sonarqube.zip*; \
     rm -rf ${SONARQUBE_HOME}/bin/*; \
     ln -s "${SONARQUBE_HOME}/lib/sonar-application-${SONARQUBE_VERSION}.jar" "${SONARQUBE_HOME}/lib/sonarqube.jar"; \
-    chmod -R 555 ${SONARQUBE_HOME}; \
-    chmod -R ugo+wrX "${SQ_DATA_DIR}" "${SQ_EXTENSIONS_DIR}" "${SQ_LOGS_DIR}" "${SQ_TEMP_DIR}"; \
-    apt-get remove -y gnupg unzip curl; \
+    chmod -R 550 ${SONARQUBE_HOME}; \
+    chmod -R 770 "${SQ_DATA_DIR}" "${SQ_EXTENSIONS_DIR}" "${SQ_LOGS_DIR}" "${SQ_TEMP_DIR}"; \
+    apt-get remove -y gnupg unzip; \
     rm -rf /var/lib/apt/lists/*;
 
-COPY --chown=sonarqube:sonarqube run.sh sonar.sh quality.sh ${SONARQUBE_HOME}/bin/
+VOLUME ["${SQ_DATA_DIR}", "${SQ_EXTENSIONS_DIR}", "${SQ_LOGS_DIR}", "${SQ_TEMP_DIR}"]
+
+COPY sonar.sh quality.sh ${SONARQUBE_HOME}/bin/
 
 WORKDIR ${SONARQUBE_HOME}
 EXPOSE 9000
 
-ENTRYPOINT ["sh","-c","bin/quality.sh & bin/run.sh"]
+USER sonarqube
+STOPSIGNAL SIGINT
+
+ENTRYPOINT ["sh","-c","bin/quality.sh & bin/sonar.sh"]
 CMD ["bin/sonar.sh"]
