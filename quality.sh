@@ -1,66 +1,52 @@
 #!/usr/bin/env bash
 
-# add curl dependency
-apt-get update && apt-get install -y curl;
-
 #########
-# Creates Sonar Qube Custom Quality Gate.
+# Creates SonarQube Custom Quality Gates and Profiles for AEM.
 #########
 
-#set -x
-
-# print in blue color
 info () {
-  printf "\e[1;34m[quality.sh]:: %s ::\e[0m\n" "$*"
+  printf "%s INFO  \e[1;34m[quality.sh] %s\e[0m\n" "$(date '+%Y-%m-%d %H:%M:%S')" "$*"
 }
-# print in red color
 error () {
-  printf "\e[1;31m[quality.sh]:: %s ::\e[0m\n" "$*"
+  printf "%s ERROR \e[1;31m[quality.sh] %s\e[0m\n" "$(date '+%Y-%m-%d %H:%M:%S')" "$*"
 }
 
-# wait here until sonar is up. sleep 5 seconds between checks.
+# wait until sonar is running. sleep 5 seconds between checks.
 while [[ "$(curl -s localhost:9000/api/system/status)" != *'"status":"UP"'* ]]; do 
   info "Waiting for Sonar to be ready.."
   sleep 5;
 done
-
 info "Sonar is UP! Configuring Quality Gates..."
 
-# default curl options
 curl_opts=(
-    -X POST 
-    --user admin:admin
-    -s
-    -o /dev/null
-    -w '%{http_code}'
+  -X POST 
+  --user admin:admin
+  -w '%{http_code}'
+  -s
 )
 
-# Send a post request
 post () {
-  STATUS=$(curl "${curl_opts[@]}" "$@")
-  # some APIs like set_as_default return a 204 for success ops
-  if [ $STATUS -eq 200 ] || [ $STATUS -eq 204 ]; then
+  RESPONSE=$(curl "${curl_opts[@]}" "$@")
+  BODY=$(echo "$RESPONSE" | sed -E 's/[0-9]{3}$//')
+  STATUS=$(echo "$RESPONSE" | grep -oE '[0-9]{3}$')
+  if [ "$STATUS" -eq 200 ] || [ "$STATUS" -eq 204 ]; then
     info "==> Success!"
   else
-    error "==> Failed."
+    error "==> Failed with status code $STATUS. Response: $BODY"
   fi
 }
 
 #######
 ## Quality Gates
 #######
-
-# create quality gate
 create_gate () {
   post localhost:9000/api/qualitygates/create "$@"
 }
 
-# set gate as default
 set_as_default_gate () {
   post localhost:9000/api/qualitygates/set_as_default "$@"
 }
 
-# create gate condition
 create_condition () {
   post localhost:9000/api/qualitygates/create_condition "$@"
 }
@@ -115,33 +101,26 @@ info "Quality Gate Creation Done!"
 #######
 ## Quality Profiles
 #######
-
 create_profile () {
   post localhost:9000/api/qualityprofiles/create "$@"
 }
-
 change_profile_parent () {
   post localhost:9000/api/qualityprofiles/change_parent "$@"
-
 }
-
 activate_rules () {
   post localhost:9000/api/qualityprofiles/activate_rules "$@"
 }
-
 set_default () {
   post localhost:9000/api/qualityprofiles/set_default "$@"
 }
-
 get_aem_profile_id () {
-  OUT="$(curl  -X POST --user admin:admin -s /dev/null localhost:9000/api/qualityprofiles/search -d qualityProfile=aem-way-java 2>/dev/null)"
+  OUT="$(curl -X GET --user admin:admin -s /dev/null localhost:9000/api/qualityprofiles/search?qualityProfile=aem-way-java)"
   pat='.*"key":"([^"]+)",.*'
   [[ "$OUT" =~ $pat ]]
   echo "${BASH_REMATCH[1]}"
 }
 
-
-#info "Create AEM Profile - Java"
+info "Create AEM Profile - Java"
 create_profile \
   -d language=java \
   -d name=aem-way-java
@@ -152,18 +131,16 @@ change_profile_parent \
   -d parentQualityProfile="Sonar way" \
   -d qualityProfile="aem-way-java"
 
-info "setting aem-way-java as default"
+info "Setting 'aem-way-java' profile as default"
 set_default \
   -d language=java \
   -d qualityProfile="aem-way-java"
 
 PROFILE_KEY=$(get_aem_profile_id)
-info "Activating AEM rules"
+info "Activating AEM rules with profile key: $PROFILE_KEY"
 activate_rules \
   -d repositories="AEM Rules,Common HTL," \
   -d targetKey=$PROFILE_KEY
+info "Quality Profile & Gate Creation done!"
 
-# clean up curl dependency
-apt-get remove --purge -y curl;
-
-info "Quality Profile Creation done!"
+info "Sonar is configured and now ready for use!"
