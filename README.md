@@ -7,7 +7,7 @@ This is a docker image that is identical to the official [SonarQube Community Bu
 Latest from Docker Hub:
 
 ```sh
-docker run --rm -p 9000:9000 lubond/sonarqube-aem:latest
+docker run -p 9000:9000 lubond/sonarqube-aem:latest
 ```
 
 From Source:
@@ -22,12 +22,12 @@ Sonar will run on port 9000.
 
 Take a look at `quality.sh` in source code and adjust it to your needs.
 
-By default, that script will create a new `aem-gate` Gate and set the following Conditions:
+By default, that script will create a new `AEM` Gate and set the following Conditions:
 
 | Quality Requirement    | Threshold |
 | ---------------------- | :-------: |
 | Code Coverage          |    80%    |
-| Code Smells            |     A     |
+| Code Smells            |     0     |
 | Maintainability Rating |     A     |
 | Reliability Rating     |     A     |
 | Security Rating        |     A     |

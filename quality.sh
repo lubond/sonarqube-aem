@@ -4,9 +4,21 @@
 # Creates SonarQube Custom Quality Gates and Profiles for AEM.
 #########
 
+# User-defined thresholds
+code_coverage_min=80
+code_smells=0
+
+# User-defined ratings (1 = A, 2 = B, 3 = C, etc.)
+maintainability_rating=1
+reliability_rating=1
+security_rating=1
+
+gate_name=AEM
+
 info () {
   printf "%s INFO  \e[1;34m[quality.sh] %s\e[0m\n" "$(date '+%Y-%m-%d %H:%M:%S')" "$*"
 }
+
 error () {
   printf "%s ERROR \e[1;31m[quality.sh] %s\e[0m\n" "$(date '+%Y-%m-%d %H:%M:%S')" "$*"
 }
@@ -53,47 +65,46 @@ create_condition () {
 
 # by default, the newly created gate ID will be 2; Since Sonar Way gate is 1.
 gate_id=2
-gate_name=aem-gate
 
-info "Creating Quality Gate: aem-gate"
+info "Creating Quality Gate: '$gate_name'"
 create_gate -d name=$gate_name
 
-info "Setting aem-gate as the default Quality Gate."
+info "Setting '$gate_name' as the default Quality Gate."
 set_as_default_gate -d name=$gate_name
 
-info "Creating Condition: Code Coverage - 80% required"
+info "Creating Condition: Code Coverage - $code_coverage_min% required"
 create_condition \
   -d metric=coverage \
   -d gateName=$gate_name \
-  -d error=80 \
+  -d error=$code_coverage_min \
   -d op=LT
 
-info "Creating Condition: Code Smells - A required"
+info "Creating Condition: Code Smells - Rating $code_smells required"
 create_condition \
   -d metric=code_smells \
   -d gateName=$gate_name \
-  -d error=1 \
+  -d error=$code_smells \
   -d op=GT
 
-info "Creating Condition: Maintainability Rating - A required"
+info "Creating Condition: Maintainability Rating - Rating $maintainability_rating required"
 create_condition \
   -d metric=sqale_rating \
   -d gateName=$gate_name \
-  -d error=1 \
+  -d error=$maintainability_rating \
   -d op=GT
 
-info "Creating Condition: Reliability Rating - A required"
+info "Creating Condition: Reliability Rating - Rating $reliability_rating required"
 create_condition \
   -d metric=reliability_rating \
   -d gateName=$gate_name \
-  -d error=1 \
+  -d error=$reliability_rating \
   -d op=GT
 
-info "Creating Condition: Security Rating - A required"
+info "Creating Condition: Security Rating - Rating $security_rating required"
 create_condition \
   -d metric=security_rating \
   -d gateName=$gate_name \
-  -d error=1 \
+  -d error=$security_rating \
   -d op=GT
 
 info "Quality Gate Creation Done!"
@@ -101,18 +112,23 @@ info "Quality Gate Creation Done!"
 #######
 ## Quality Profiles
 #######
+
 create_profile () {
   post localhost:9000/api/qualityprofiles/create "$@"
 }
+
 change_profile_parent () {
   post localhost:9000/api/qualityprofiles/change_parent "$@"
 }
+
 activate_rules () {
   post localhost:9000/api/qualityprofiles/activate_rules "$@"
 }
+
 set_default () {
   post localhost:9000/api/qualityprofiles/set_default "$@"
 }
+
 get_aem_profile_id () {
   OUT="$(curl -X GET --user admin:admin -s /dev/null localhost:9000/api/qualityprofiles/search?qualityProfile=aem-way-java)"
   pat='.*"key":"([^"]+)",.*'
