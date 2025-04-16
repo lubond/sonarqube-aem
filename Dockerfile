@@ -13,7 +13,8 @@ ENV LANG='en_US.UTF-8' \
 
 # SonarQube setup with AEM Rules jar
 ARG AEM_RULE_JAR_VERSION=1.7
-ARG SONARQUBE_VERSION=25.3.0.104237
+ARG SONARQUBE_VERSION=25.4.0.105899
+
 ARG SONARQUBE_ZIP_URL=https://binaries.sonarsource.com/Distribution/sonarqube/sonarqube-${SONARQUBE_VERSION}.zip
 ENV DOCKER_RUNNING="true" \
     JAVA_HOME='/opt/java/openjdk' \
@@ -33,11 +34,11 @@ RUN set -eux; \
     useradd --system --uid 1000 --gid 0 sonarqube; \
     apt-get update; \
     apt-get --no-install-recommends -y install \
-        bash \
-        curl \
-        fonts-dejavu \
-        gnupg \
-        unzip; \
+    bash \
+    curl \
+    fonts-dejavu \
+    gnupg \
+    unzip; \
     echo "networkaddress.cache.ttl=5" >> "${JAVA_HOME}/conf/security/java.security"; \
     sed --in-place --expression="s?securerandom.source=file:/dev/random?securerandom.source=file:/dev/urandom?g" "${JAVA_HOME}/conf/security/java.security"; \
     # pub   2048R/D26468DE 2015-05-25
