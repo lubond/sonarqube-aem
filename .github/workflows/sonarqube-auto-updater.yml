@@ -1,4 +1,4 @@
-name: Automated SonarQube Version Update Check
+name: Automated SonarQube Update Checker
 
 on:
     schedule:
@@ -86,5 +86,12 @@ jobs:
                   git commit -m "Update SonarQube version to $NEW_VERSION"
                   git push
 
-# The commit to main branch will trigger your existing main.yml workflow
-# which will handle the Docker Hub push
+            # Trigger the release workflow directly as a repository dispatch event
+            # This will trigger the release workflow defined in .github/workflows/release.yml
+            - name: Trigger release workflow
+              if: steps.check-version.outputs.update_available == 'true'
+              uses: peter-evans/repository-dispatch@v2
+              with:
+                token: ${{ secrets.PAT_TOKEN }}
+                event-type: sonarqube-version-updated
+                client-payload: '{"version": "${{ steps.check-version.outputs.new_version }}"}'
