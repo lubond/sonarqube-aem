@@ -1,4 +1,5 @@
-name: Docker Image CI
+name: Release - Docker Build and Push
+# This workflow builds and pushes a Docker image to Docker Hub.
 
 on:
   push:
