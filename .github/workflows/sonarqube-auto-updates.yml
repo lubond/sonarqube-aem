@@ -1,0 +1,90 @@
+name: Automated SonarQube Version Update Check
+
+on:
+    schedule:
+        # Run daily at 00:00 UTC
+        - cron: "0 0 * * *"
+    # Allow manual triggering
+    workflow_dispatch:
+
+jobs:
+    update-test-and-push:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v4
+
+            - name: Check for SonarQube version updates
+              id: check-version
+              run: |
+                  # Get the current version from our Dockerfile
+                  CURRENT_VERSION=$(grep -oP 'ARG SONARQUBE_VERSION=\K[0-9.]+' Dockerfile)
+                  echo "Current SonarQube version: $CURRENT_VERSION"
+
+                  # Fetch the latest version from the official SonarQube Docker repo
+                  LATEST_VERSION=$(curl -s https://raw.githubusercontent.com/SonarSource/docker-sonarqube/master/community-build/Dockerfile | grep -oP 'ARG SONARQUBE_VERSION=\K[0-9.]+')
+                  echo "Latest SonarQube version: $LATEST_VERSION"
+
+                  if [ "$CURRENT_VERSION" != "$LATEST_VERSION" ] && [ ! -z "$LATEST_VERSION" ]; then
+                    echo "New version detected: $LATEST_VERSION"
+                    echo "update_available=true" >> $GITHUB_OUTPUT
+                    echo "new_version=$LATEST_VERSION" >> $GITHUB_OUTPUT
+                  else
+                    echo "No new version available"
+                    echo "update_available=false" >> $GITHUB_OUTPUT
+                    exit 0  # Exit workflow early if no update is available
+                  fi
+
+            - name: Update Dockerfile with new version
+              if: steps.check-version.outputs.update_available == 'true'
+              run: |
+                  NEW_VERSION=${{ steps.check-version.outputs.new_version }}
+                  echo "Testing build with new version: $NEW_VERSION"
+
+                  # Update the version in Dockerfile
+                  sed -i "s/ARG SONARQUBE_VERSION=[0-9.]\+/ARG SONARQUBE_VERSION=$NEW_VERSION/" Dockerfile
+
+            - name: Set up Docker Buildx
+              if: steps.check-version.outputs.update_available == 'true'
+              uses: docker/setup-buildx-action@v2
+
+            - name: Test Docker Build
+              if: steps.check-version.outputs.update_available == 'true'
+              uses: docker/build-push-action@v4
+              with:
+                  context: .
+                  file: Dockerfile
+                  push: false
+                  load: true
+                  tags: sonarqube-aem:test-build
+
+            - name: Test Container Starts
+              if: steps.check-version.outputs.update_available == 'true'
+              run: |
+                  echo "Testing if container starts properly..."
+                  docker run -d --name sonarqube-test -p 9999:9000 sonarqube-aem:test-build
+                  # Give it some time to start
+                  sleep 30
+                  # Check container is still running (non-zero exit code means it crashed)
+                  docker ps | grep sonarqube-test || { echo "Container failed to stay running"; exit 1; }
+                  docker stop sonarqube-test
+                  docker rm sonarqube-test
+                  echo "Container test passed successfully!"
+
+            - name: Commit and push changes
+              if: steps.check-version.outputs.update_available == 'true'
+              run: |
+                  NEW_VERSION=${{ steps.check-version.outputs.new_version }}
+                  echo "Updating Dockerfile with new version: $NEW_VERSION"
+
+                  # Configure git
+                  git config --local user.email "github-actions[bot]@users.noreply.github.com"
+                  git config --local user.name "github-actions[bot]"
+
+                  # Commit and push
+                  git add Dockerfile
+                  git commit -m "Update SonarQube version to $NEW_VERSION"
+                  git push
+
+# The commit to main branch will trigger your existing main.yml workflow
+# which will handle the Docker Hub push
