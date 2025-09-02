@@ -13,7 +13,7 @@ ENV LANG='en_US.UTF-8' \
 
 # SonarQube setup with AEM Rules jar
 ARG AEM_RULE_JAR_VERSION=1.7
-ARG SONARQUBE_VERSION=25.8.0.112029
+ARG SONARQUBE_VERSION=25.9.0.112764
 
 ARG SONARQUBE_ZIP_URL=https://binaries.sonarsource.com/Distribution/sonarqube/sonarqube-${SONARQUBE_VERSION}.zip
 ENV DOCKER_RUNNING="true" \
