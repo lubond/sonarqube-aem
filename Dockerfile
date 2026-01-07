@@ -1,4 +1,4 @@
-FROM eclipse-temurin:21-jre-noble
+FROM eclipse-temurin:21-jdk-noble
 
 LABEL io.k8s.description="AEM SonarQube Community Build, preconfigured code review tool that systematically helps you deliver Clean Code."
 LABEL io.openshift.min-cpu=400m
@@ -13,7 +13,7 @@ ENV LANG='en_US.UTF-8' \
 
 # SonarQube setup with AEM Rules jar
 ARG AEM_RULE_JAR_VERSION=1.7
-ARG SONARQUBE_VERSION=25.12.0.117093
+ARG SONARQUBE_VERSION=26.1.0.118079
 
 ARG SONARQUBE_ZIP_URL=https://binaries.sonarsource.com/Distribution/sonarqube/sonarqube-${SONARQUBE_VERSION}.zip
 ENV DOCKER_RUNNING="true" \
