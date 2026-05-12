@@ -10,6 +10,9 @@ on:
 jobs:
     update-test-and-push:
         runs-on: ubuntu-latest
+        outputs:
+            version_updated: ${{ steps.commit-push.outputs.did_push }}
+            commit_sha: ${{ steps.commit-push.outputs.commit_sha }}
         steps:
             - name: Checkout repository
               uses: actions/checkout@v4
@@ -72,6 +75,7 @@ jobs:
                   echo "Container test passed successfully!"
 
             - name: Commit and push changes
+              id: commit-push
               if: steps.check-version.outputs.update_available == 'true'
               run: |
                   NEW_VERSION=${{ steps.check-version.outputs.new_version }}
@@ -85,13 +89,13 @@ jobs:
                   git add Dockerfile
                   git commit -m "Update SonarQube version to $NEW_VERSION"
                   git push
+                  echo "did_push=true" >> $GITHUB_OUTPUT
+                  echo "commit_sha=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
 
-            # Trigger the release workflow directly as a repository dispatch event
-            # This will trigger the release workflow defined in .github/workflows/release.yml
-            - name: Trigger release workflow
-              if: steps.check-version.outputs.update_available == 'true'
-              uses: peter-evans/repository-dispatch@v2
-              with:
-                token: ${{ secrets.PAT_TOKEN }}
-                event-type: sonarqube-version-updated
-                client-payload: '{"version": "${{ steps.check-version.outputs.new_version }}"}'
+    release-after-update:
+        needs: update-test-and-push
+        if: needs.update-test-and-push.outputs.version_updated == 'true'
+        uses: ./.github/workflows/release.yml
+        with:
+            ref: ${{ needs.update-test-and-push.outputs.commit_sha }}
+        secrets: inherit
