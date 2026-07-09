@@ -1,5 +1,8 @@
 name: Automated SonarQube Update Checker
 
+permissions:
+    contents: read
+
 on:
     schedule:
         # Run daily at 00:00 UTC
@@ -9,6 +12,8 @@ on:
 
 jobs:
     update-test-and-push:
+        permissions:
+            contents: write
         runs-on: ubuntu-latest
         outputs:
             version_updated: ${{ steps.commit-push.outputs.did_push }}
@@ -93,6 +98,8 @@ jobs:
                   echo "commit_sha=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
 
     release-after-update:
+        permissions:
+            contents: read
         needs: update-test-and-push
         if: needs.update-test-and-push.outputs.version_updated == 'true'
         uses: ./.github/workflows/release.yml
