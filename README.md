@@ -1,6 +1,6 @@
 # sonarqube-aem
 
-This is a docker image that is identical to the official [SonarQube Community Build Docker image](https://github.com/SonarSource/docker-sonarqube/blob/master/community-build/Dockerfile) with added scripts to install the [AEM-Rules for SonarQube](https://github.com/Cognifide/AEM-Rules-for-SonarQube) extension.
+This is a docker image that is identical to the official [SonarQube Community Build Docker image](https://github.com/SonarSource/docker-sonarqube/blob/master/community-build/Dockerfile) with added scripts to install the [AEM-Rules for SonarQube](https://github.com/Cognifide/AEM-Rules-for-SonarQube) extension for scanning projects built to run on Adobe AEMaaCS or on premise instances (i.e. not EDS).
 
 ## Running
 
